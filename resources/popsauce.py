@@ -411,10 +411,13 @@ class DispatchBot(Resource):
         
         code = room_data[code]["success"]
 
-        if not success:
-            self.logger.error("Failed to dispatch bot")
-            return {"error": "Failed to dispatch bot"}, 500
-        else:
-            self.logger.info("Bot dispatched successfully")
-            return {"message": "Bot dispatched"}, 200
-
+        match code:
+            case 200:
+                self.logger.info("Bot dispatched successfully")
+                return {"message": "Bot dispatched"}, 200
+            case 429:
+                self.logger.error("Slow down")
+                return {"error": "Slow down"}, 429
+            case 500:
+                self.logger.error("Failed to dispatch bot")
+                return {"error": "Failed to dispatch bot"}, 500
