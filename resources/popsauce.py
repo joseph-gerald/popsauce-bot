@@ -7,7 +7,8 @@ from jklm.exceptions import RoomNotFoundException
 
 from config import (
     NICKNAME,
-    CONNECTION
+    CONNECTION,
+    logger
 )
 
 import requests
@@ -30,9 +31,16 @@ def sha1(input):
     return hashlib.sha1(input).hexdigest()
 
 def dispatch_bot_to(room_id):
-    global session, room_data
+    global room_data    
+    session = JKLM(NICKNAME, pfp=image, connection=json.loads(CONNECTION) if CONNECTION else None)
 
-    room_data[room_id] = { "success": None }
+    if room_data.get(room_id) is not None:
+        dispatch_time = room_data[room_id]["dispatch_time"]
+        if time.time() - dispatch_time < 60:
+            room_data[room_id]["success"] = 429
+            return
+
+    room_data[room_id] = { "success": None, "dispatch_time": time.time() }
     room_data[room_id]["expecting_image"] = False
     room_data[room_id]["challenge"] = {
         "end_time": 0,
@@ -57,7 +65,7 @@ def dispatch_bot_to(room_id):
         # 0 CODE = Kicked from room (event = TYPE ["KICKED" | "BAN"], data = INFO)
 
         if (code == 0):
-            print("[X] Kicked from room:", data)
+            logger.info("[X] Kicked from room: " + data)
             return
 
         match event:
@@ -67,7 +75,7 @@ def dispatch_bot_to(room_id):
                 if data["peerId"] == session.peer_id:
                     return
 
-                print(f"[CHAT] {data['nickname']}: {message}")
+                logger.info(f"[CHAT] {data['nickname']}: {message}")
 
                 if not message.startswith("!"):
                     return
@@ -77,30 +85,40 @@ def dispatch_bot_to(room_id):
 
                 match command:
                     case "help":
-                        print(f"[!] {data['nickname']} requested help")
-                        session.send_chat_message("""\\n\\n
+                        logger.info(f"[!] {data['nickname']} requested help")
+
+                        messages_to_send = ["""\\n\\n
         !help - Show this message\\n
         !join - Join the round\\n
         !settings - Show the current settings
-                        """.replace("\n",""))
-                        session.send_chat_message("""\\n
+                        """, """\\n
         !answer - answers the question\\n
         !announce - sends answer in chat\\n
         !toggle <setting> - toggles setting ON/OFF\\n
-                        """.replace("\n",""))
+                        """]
+
+                        session.send_chat_message(messages_to_send[0].replace("\n",""))
+                        session.send_chat_message(messages_to_send[1].replace("\n",""))
+
                     case "join":
-                        print(f"[!] {data['nickname']} requested to join")
+                        logger.info(f"[!] {data['nickname']} requested to join")
                         session.join_round()
+                        session.send_chat_message(f"\\n         [!] Joined the round")
+
                     case "settings" | "config" | "conf":
-                        print(f"[!] {data['nickname']} requested settings")
-                        session.send_chat_message(f"""\\n\\n
+                        logger.info(f"[!] {data['nickname']} requested settings")
+
+                        messages_to_send = f"""\\n\\n
         auto_answer: {"ON" if settings['auto_answer'] else "OFF"}\\n
         auto_join: {"ON" if settings['auto_join'] else "OFF"}\\n
         auto_announce: {"ON" if settings['auto_announce'] else "OFF"}
-                        """.replace("\n",""))
+                        """
+
+                        session.send_chat_message(messages_to_send.replace("\n",""))
+                        
                     case "toggle" | "t":
                         if len(args) == 0:
-                            session.send_chat_message(f"[x] Missing setting to toggle")
+                            session.send_chat_message(f"\\n         [X] Missing setting to toggle")
                             return
                         
                         setting = args[0]
@@ -110,11 +128,13 @@ def dispatch_bot_to(room_id):
                             settings["auto_join"] = not settings["auto_join"]
                             settings["auto_announce"] = not settings["auto_announce"]
 
-                            session.send_chat_message(f"""\\n\\n
-            auto_answer: {"ON" if settings['auto_answer'] else "OFF"}\\n
-            auto_join: {"ON" if settings['auto_join'] else "OFF"}\\n
-            auto_announce: {"ON" if settings['auto_announce'] else "OFF"}
-                            """.replace("\n",""))
+                            messages_to_send = f"""\\n\\n
+        auto_answer: {"ON" if settings['auto_answer'] else "OFF"}\\n
+        auto_join: {"ON" if settings['auto_join'] else "OFF"}\\n
+        auto_announce: {"ON" if settings['auto_announce'] else "OFF"}
+                            """
+
+                            session.send_chat_message(messages_to_send.replace("\n",""))
                             return
 
                         # add suport for missing undderscores e.g auto_join can be shortened to autojoin
@@ -125,36 +145,36 @@ def dispatch_bot_to(room_id):
                                 break
 
                         if setting not in settings:
-                            session.send_chat_message(f"[x] Unknown setting: {setting}")
+                            session.send_chat_message(f"\\n         [X] Unknown setting: {setting}\\n")
                             return
                         
                         settings[setting] = not settings[setting]
                         
                         status = "ON" if settings[setting] else "OFF"
-                        session.send_chat_message(f"\\n\\n         [x] Set {setting} to {status}\\n\\n")
+                        session.send_chat_message(f"\\n\\n         [X] Set {setting} to {status}\\n\\n")
                     case "answer":
                         if not challenge["answer"]:
-                            session.send_chat_message(f"[x] No answer indexed for this challenge")
+                            session.send_chat_message(f"[X] No answer indexed for this challenge")
                             return
                         else:
                             session.submit_guess(challenge["answer"])
                     case "announce":
                         if not challenge["answer"]:
-                            session.send_chat_message(f"[x] No answer indexed for this challenge")
+                            session.send_chat_message(f"\\n         [X] No answer indexed for this challenge")
                             return
                         else:
-                            session.send_chat_message(f"\\n         [o] The answer is: {challenge['answer']}\\n")
+                            session.send_chat_message(f"\\n         [A] {challenge['answer']}\\n")
                     case _:
-                        session.send_chat_message(f"[x] Unknown command: {command}")
+                        session.send_chat_message(f"[X] Unknown command: {command}")
 
             case "chatterAdded":
-                print(f"[+] {data} joined the room")
+                logger.info(f"[+] {data} joined the room")
             case "chatterRemoved":
-                print(f"[-] {data} left the room")
+                logger.info(f"[-] {data} left the room")
             case "setPlayerCount":
-                print(f"[!] {data} players in the room")
+                logger.info(f"[!] {data} players in the room")
             case _:
-                print(f"[UNHANDLED CHAT EVENT] {event}:", data)
+                logger.info(f"[UNHANDLED CHAT EVENT] {event}: " + data)
 
     def game_handler(code, raw_data):
         challenge = room_data[room_id]["challenge"]
@@ -166,7 +186,7 @@ def dispatch_bot_to(room_id):
         # 0 CODE = Kicked from room (event = TYPE ["KICKED" | "BAN"], data = INFO)
 
         if (code == 0):
-            print("[X] Kicked from room:", data)
+            logger.info("[X] Kicked from room:", data)
             return
 
         if (code == -1):
@@ -187,22 +207,22 @@ def dispatch_bot_to(room_id):
             challenge["hash"] = sha1(challenge["prompt"].encode() + raw_data)
             challenge["image"]["extension"] = extension
 
-            print("[?] Challenge Hash:", challenge["hash"])
+            logger.info("[?] Challenge Hash: " + challenge["hash"])
             
             answer = answers.get(challenge["hash"])
             challenge["answer"] = answer
 
             if answer:
-                print("[!] Answer is indexed:", answer)
+                logger.info("[!] Answer is indexed: " + answer)
 
                 if settings["auto_answer"]:
                     session.submit_guess(answer)
 
                 if settings["auto_announce"]:
-                    session.send_chat_message(f"[o] The answer is: {answer}")
+                    session.send_chat_message(f"[A] {answer}")
             else:
-                print("[!] Answer was not indexed")
-                session.send_chat_message(f"[x] No answer indexed for this challenge")
+                logger.info("[!] Answer was not indexed")
+                session.send_chat_message(f"[X] No answer indexed for this challenge")
 
             room_data[room_id]["expecting_image"] = False
 
@@ -210,7 +230,7 @@ def dispatch_bot_to(room_id):
 
         match event:
             case "startChallenge":
-                print("\n[!] New Challenge Started")
+                logger.info("\n[!] New Challenge Started")
 
                 challenge["end_time"] = data["endTime"] if "endTime" in data else 0
                 challenge["image"] = data["image"]
@@ -219,36 +239,49 @@ def dispatch_bot_to(room_id):
 
                 if challenge["image"]:
                     expecting_image = True
-                    print("[?] Image Challenge", challenge["prompt"])
+                    logger.info("[?] Image Challenge: " + challenge["prompt"])
                 else:
                     expecting_image = False
                     challenge["hash"] = sha1(challenge["prompt"] + challenge["text"])
 
-                    print("[?] Text Challenge:", challenge["prompt"])
-                    print("[?] Challenge Hash:", challenge["hash"])
-                    print("[?]", challenge["text"])
+                    logger.info("[?] Text Challenge: " + challenge["prompt"])
+                    logger.info("[?] Challenge Hash: " + challenge["hash"])
+                    logger.info("[?] " + challenge["text"])
 
                     answer = answers.get(challenge["hash"])
                     challenge["answer"] = answer
         
                     if answer:
-                        print("[!] Answer is indexed:", answer)
+                        logger.info("[!] Answer is indexed: " + answer)
 
                         if settings["auto_answer"]:
                             session.submit_guess(answer)
 
                         if settings["auto_announce"]:
-                            session.send_chat_message(f"[o] The answer is: {answer}")
+                            session.send_chat_message(f"[A] {answer}")
                     else:
-                        print("[!] Answer was not indexed")
-                        session.send_chat_message(f"[x] No answer indexed for this challenge")
-
+                        logger.info("[!] Answer was not indexed")
+                        session.send_chat_message(f"[X] No answer indexed for this challenge")
 
             case "endChallenge":
-                return
-                print("\n[!] Challenge Ended")
-                print("[X] Correct Answer:", data["source"])
-                
+                answer = data["source"]
+                submitter = data["submitter"]
+                details = data["details"]
+
+                logger.info("\n[!] Challenge Ended")
+                logger.info("[X] Correct Answer: " + data["source"])
+
+                if not challenge["answer"]:
+                    session.send_chat_message(f"[X] The challenge will soon be indexed")
+                    with open("answers/" + challenge["hash"] + ".json", "w") as f:
+                        f.write(json.dumps({
+                            "answer": answer,
+                            "submitter": submitter,
+                            "details": details,
+                            "challenge": challenge,
+                            "tags": []
+                        }))
+
             case "setPlayerState":
                 return
                 event, peer_id, data = raw_data
@@ -261,7 +294,7 @@ def dispatch_bot_to(room_id):
                 if (peer_id == session.peer_id):
                     return
 
-                print(f"[!] {peer_id} {data}")
+                logger.info(f"[!] {peer_id} {data}")
                 
                 if peer_id == session.peer_id:
                     return
@@ -269,9 +302,9 @@ def dispatch_bot_to(room_id):
                 player = list(filter(lambda x: x["profile"]["peerId"] == peer_id, session.game["players"]))[0]
 
                 if found_answer:
-                    print(f"[!] {player['profile']['nickname']} with {points} points guessed it in {elapsed_time} seconds")
+                    logger.info(f"[!] {player['profile']['nickname']} with {points} points guessed it in {elapsed_time} seconds")
                 else:
-                    print(f"[!] {player['profile']['nickname']} with {points} points guessed {guess}")
+                    logger.info(f"[!] {player['profile']['nickname']} with {points} points guessed {guess}")
 
             case "updatePlayer":
                 return
@@ -280,13 +313,13 @@ def dispatch_bot_to(room_id):
                 player = list(filter(lambda x: x["profile"]["peerId"] == peer_id, session.game["players"]))[0]
 
                 if online:
-                    print(f"[+] {player['profile']['nickname']} reconnected to the game")
+                    logger.info(f"[+] {player['profile']['nickname']} reconnected to the game")
                 else:
-                    print(f"[-] {player['profile']['nickname']} disconnected from the game")
+                    logger.info(f"[-] {player['profile']['nickname']} disconnected from the game")
 
             case "addPlayer":
                 return
-                print(f"[+] {data['profile']['nickname']} joined the game")
+                logger.info(f"[+] {data['profile']['nickname']} joined the game")
 
             case "setMilestone":
                 if settings["auto_join"]:
@@ -294,7 +327,7 @@ def dispatch_bot_to(room_id):
                     session.join_round()
 
             case _:
-                print(f"[UNHANDLED GAME EVENT] {event}:", raw_data)
+                logger.info(f"[UNHANDLED GAME EVENT] {event}: " + raw_data)
 
         room_data[room_id]["expecting_image"] = expecting_image
         room_data[room_id]["challenge"] = challenge
@@ -307,7 +340,7 @@ def dispatch_bot_to(room_id):
         # Checks if a challenge is already started
 
         if ("challenge" in session.game["milestone"]):
-            print("\n[!] Challenge already started")
+            logger.info("\n[!] Challenge already started")
             
             current_challenge = session.game["milestone"]["challenge"]
             
@@ -319,15 +352,15 @@ def dispatch_bot_to(room_id):
 
             if challenge["image"]:
                 expecting_image = True
-                print("[?] Image Challenge", challenge["prompt"])
+                logger.info("[?] Image Challenge " + challenge["prompt"])
             else:
                 expecting_image = False
 
                 challenge["hash"] = sha1(challenge["prompt"] + challenge["text"])
 
-                print("[?] Text Challenge:", challenge["prompt"])
-                print("[?]", challenge["text"])
-                print("[?] Challenge Hash:", challenge["hash"])
+                logger.info("[?] Text Challenge: " + challenge["prompt"])
+                logger.info("[?] " + challenge["text"])
+                logger.info("[?] Challenge Hash: " + challenge["hash"])
 
         room_data[room_id]["expecting_image"] = expecting_image
         room_data[room_id]["challenge"] = challenge
@@ -337,10 +370,10 @@ def dispatch_bot_to(room_id):
         Do !help to see available commands\\n
         
         """.replace("\n",""))
-        room_data[room_id]["success"] = True
+        room_data[room_id]["success"] = 200
     except Exception as e:
-        room_data[room_id]["success"] = False
-        print("[X] Failed to dispatch:", e)
+        room_data[room_id]["success"] = 500
+        logger.info("[X] Failed to dispatch: " + e)
         return
     
 class DispatchBot(Resource):
@@ -376,7 +409,7 @@ class DispatchBot(Resource):
         while room_data.get(code) is None or room_data[code].get("success") is None:
             time.sleep(0.1)
         
-        success = room_data[code]["success"]
+        code = room_data[code]["success"]
 
         if not success:
             self.logger.error("Failed to dispatch bot")

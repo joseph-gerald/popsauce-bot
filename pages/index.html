@@ -28,11 +28,11 @@
         href="https://fonts.googleapis.com/css?family=Sometype Mono:wght@400;500,600,700,800&amp;display=swap">
 </head>
 
-<body class="font-body text-text bg-background min-h-screen overflow-x-clip overflow-y-hidden">
+<body class="font-body text-text bg-background min-h-screen overflow-x-hidden overflow-y-hidden">
     <div id="main" class="container mx-auto min-h-screen flex flex-col items-center justify-center">
         <div id="container" class="w-full max-w-[630px] px-5">
-            <h1>Popsauce Bot</h1>
-            <small><b>simple</b> and <b>easy-to-use</b> popsauce bot</small>
+            <h1 id="title">Popsauce Bot</h1>
+            <small id="subtitle"><b>simple</b> and <b>easy-to-use</b> popsauce bot</small>
 
             <div class="mt-5 flex flex-col gap-4 w-full">
                 <div class="flex gap-4">
@@ -64,6 +64,9 @@
         const codeInputs = document.querySelectorAll('input[type="text"]');
         const sendButton = document.querySelector('button');
         const container = document.getElementById('container');
+
+        const subtitle = document.getElementById('subtitle');
+        const title = document.getElementById('title');
 
         codeInputs.forEach((input, index) => {
             input.addEventListener('input', (e) => {
@@ -164,22 +167,17 @@
 
             container.animate([
                 {
-                    transform: 'translateY(0)',
+                    transform: 'translateX(0) scale(1)',
                     opacity: 1
                 },
                 {
-                    transform: 'translateY(calc(-45vh + 332px))',
-                    opacity: 1,
-                    filter: 'blur(2px)'
-                },
-                {
-                    transform: 'translateY(calc(-100vh + 332px))',
+                    transform: 'translateX(60vw) scale(1.2)',
                     opacity: 0,
                     filter: 'blur(10px)'
                 }
             ], {
-                duration: 400,
-                easing: 'ease-in'
+                duration: 450,
+                easing: 'cubic-bezier(0.36, 0, 0.66, -0.56)'
             }).onfinish = () => {
                 container.style.display = 'none';
             };
@@ -194,7 +192,7 @@
                         code: code.toUpperCase()
                     })
                 }),
-                new Promise((resolve) => setTimeout(resolve, 420))
+                new Promise((resolve) => setTimeout(resolve, 450))
             ]
 
             const [res, timer] = await Promise.all(promises);
@@ -207,29 +205,32 @@
                 codeInputs.forEach((input, index) => {
                     input.value = "SENT".split('')[index];
                     input.readOnly = true;
-                    input.classList.add("hover:cursor-not-allowed", "outline-none");
+                    input.classList.add("hover:cursor-not-allowed", "outline-none", "hidden");
                 });
                 sendButton.classList.add("hidden");
+
+                title.innerHTML = "Success";
+                subtitle.innerHTML = "Your popsauce bot has been sent successfully!";
             } else {
                 container.innerHTML = `
                     <h1 class="text-4xl">${res.status}</h1>
-                    <p>${data.error}</p>
+                    <p class="uppercase">${data.error}</p>
                 `;
             }
 
             container.animate([
                 {
-                    transform: 'translateY(calc(80vh - 332px))',
+                    transform: 'translateX(-60vw) scale(1.2)',
                     opacity: 0,
                     filter: 'blur(5px)'
                 },
                 {
-                    transform: 'translateY(0)',
+                    transform: 'translateX(0) scale(1)',
                     opacity: 1
                 }
             ], {
-                duration: 325,
-                easing: 'ease-in-out'
+                duration: 725,
+                easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)'
             });
         });
     </script>
