@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 / NOT FOUND</title>
+</head>
+<style>
+    body {
+        background-color: #f8f9fa;
+        font-family: Arial, sans-serif;
+        color: #495057;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        flex-direction: column;
+
+    }
+
+    p,
+    h1,
+    h3 {
+        margin: 0;
+    }
+
+    h1 {
+        font-size: 5em;
+
+    }
+
+    kbd {
+        background-color: #eee;
+        border-radius: 3px;
+        border: 1px solid #b4b4b4;
+        box-shadow:
+            0 1px 1px rgba(0, 0, 0, 0.2),
+            0 2px 0 0 rgba(255, 255, 255, 0.7) inset;
+        color: #333;
+        display: inline-block;
+        font-weight: 700;
+        line-height: 1;
+        padding: 2px 4px;
+        white-space: nowrap;
+    }
+
+    .sensitive {
+        filter: blur(1px);
+    }
+
+    p.sensitive {
+        filter: blur(3px);
+    }
+
+    .sensitive:hover {
+        filter: none;
+    }
+
+    footer {
+        position: absolute; bottom: 20px;
+        text-align: center;
+    }
+</style>
+
+<body>
+    <h1>404</h1>
+    <h3><code><kbd>{{ path }}</kbd> NOT FOUND</code></h3>
+
+    <footer>
+        <code><kbd class="sensitive"><p class="sensitive">{{ ray }}</p></kbd> RAY / IP <kbd class="sensitive"><p class="sensitive">{{ ip }}</p></kbd></code>
+    </footer>
+</body>
+
+</html>

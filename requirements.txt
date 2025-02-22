@@ -1,0 +1,14 @@
+Flask==3.0.1
+Flask-Cors==4.0.0
+Flask-RESTful==0.3.10
+flask_apscheduler
+flask_cors
+
+python-dotenv==1.0.1
+requests
+beautifulsoup4
+tls_client
+typing_extensions
+flask[async]
+nodriver==0.27rc3
+apscheduler

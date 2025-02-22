@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Popsauce Bot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            content: ["*"],
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'body': ['"Sometype Mono"']
+                    },
+                    colors: {
+                        'text': '#dcdcdc',
+                        'background': '#0a0a0a',
+                        'highlight': '#0f0f0f',
+                        'border': '#1b1b1b',
+                    },
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css?family=Sometype Mono:wght@400;500,600,700,800&amp;display=swap">
+</head>
+
+<body class="font-body text-text bg-background min-h-screen overflow-x-clip overflow-y-hidden">
+    <div id="main" class="container mx-auto min-h-screen flex flex-col items-center justify-center">
+        <div id="container" class="w-full max-w-[630px] px-5">
+            <h1>Popsauce Bot</h1>
+            <small><b>simple</b> and <b>easy-to-use</b> popsauce bot</small>
+
+            <div class="mt-5 flex flex-col gap-4 w-full">
+                <div class="flex gap-4">
+                    <input type="text"
+                        class="border border-[#1b1b1b] bg-[#0f0f0f] text-[#dcdcdc] px-4 py-2 rounded-md w-full text-8xl text-center"
+                        placeholder="_">
+
+                    <input type="text"
+                        class="border border-[#1b1b1b] bg-[#0f0f0f] text-[#dcdcdc] px-4 py-2 rounded-md w-full text-8xl text-center"
+                        placeholder="_">
+
+                    <input type="text"
+                        class="border border-[#1b1b1b] bg-[#0f0f0f] text-[#dcdcdc] px-4 py-2 rounded-md w-full text-8xl text-center"
+                        placeholder="_">
+
+                    <input type="text"
+                        class="border border-[#1b1b1b] bg-[#0f0f0f] text-[#dcdcdc] px-4 py-2 rounded-md w-full text-8xl text-center"
+                        placeholder="_">
+                </div>
+
+                <button
+                    class="border border-[#1b1b1b] bg-[#0f0f0f] hover:bg-[#1b1b1b] active:opacity-75 text-[#dcdcdc] px-4 py-2 rounded-md">Send
+                    Bot</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const codeInputs = document.querySelectorAll('input[type="text"]');
+        const sendButton = document.querySelector('button');
+        const container = document.getElementById('container');
+
+        codeInputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                if (e.target.value.length >= 1) {
+                    if (index < codeInputs.length - 1) {
+                        codeInputs[index].value = e.target.value.slice(0, 1).toUpperCase();
+                        codeInputs[index + 1].focus();
+                    } else {
+                        codeInputs[index].value = e.target.value.slice(0, 1).toUpperCase();
+                        codeInputs[index].blur();
+                    }
+                }
+            });
+
+            input.addEventListener('keydown', (e) => {
+                if ((
+                    e.key === 'Backspace' || e.key === 'Delete'
+                ) && e.target.value === '') {
+                    if (index > 0) {
+                        codeInputs[index - 1].focus();
+                    }
+                }
+            });
+        });
+
+        codeInputs.forEach((input, index) => {
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const text = e.clipboardData.getData('text');
+                for (let i = 0; i < text.length; i++) {
+                    if (index + i < codeInputs.length) {
+                        codeInputs[index + i].value = text[i].toUpperCase();
+                        codeInputs[index + i].focus();
+                    }
+                }
+            });
+        });
+
+        sendButton.addEventListener('click', async () => {
+            if (main.classList.contains("shake-light")) return;
+            const code = Array.from(codeInputs).map(input => input.value).join('');
+            console.log(code);
+
+            let focused = false;
+
+            if (code.length < 4) {
+                codeInputs.forEach(input => {
+                    if (input.value === '') {
+                        input.classList.add("shake");
+                        if (!focused && (focused = true)) input.focus();
+                        input.animate([
+                            {
+                                transform: 'translateX(0)',
+                                border: '1px solid #b4b4b4'
+                            },
+                            {
+                                transform: 'translateX(5px)'
+                            },
+                            {
+                                transform: 'translateX(-5px)'
+                            },
+                            {
+                                transform: 'translateX(5px)'
+                            },
+                            {
+                                transform: 'translateX(-5px)'
+                            },
+                            {
+                                transform: 'translateX(5px)'
+                            },
+                            {
+                                transform: 'translateX(-5px)'
+                            },
+                            {
+                                transform: 'translateX(5px)'
+                            },
+                            {
+                                transform: 'translateX(-5px)'
+                            },
+                            {
+                                transform: 'translateX(0)'
+                            }
+                        ], {
+                            duration: 1000,
+                            easing: 'ease-in-out'
+                        });
+                    }
+                });
+
+                main.classList.toggle("shake-light");
+
+                setTimeout(() => {
+                    main.classList.toggle("shake-light")
+                    codeInputs.forEach(input => input.classList.remove("shake"));
+                }, 1000);
+                return;
+            }
+
+            container.animate([
+                {
+                    transform: 'translateY(0)',
+                    opacity: 1
+                },
+                {
+                    transform: 'translateY(calc(-45vh + 332px))',
+                    opacity: 1,
+                    filter: 'blur(2px)'
+                },
+                {
+                    transform: 'translateY(calc(-100vh + 332px))',
+                    opacity: 0,
+                    filter: 'blur(10px)'
+                }
+            ], {
+                duration: 400,
+                easing: 'ease-in'
+            }).onfinish = () => {
+                container.style.display = 'none';
+            };
+
+            const promises = [
+                fetch('/api/v1/bot/dispatch', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        code: code.toUpperCase()
+                    })
+                }),
+                new Promise((resolve) => setTimeout(resolve, 420))
+            ]
+
+            const [res, timer] = await Promise.all(promises);
+            console.log(res);
+            const data = await res.json();
+
+            container.style.display = 'block';
+
+            if (res.status == 200) {
+                codeInputs.forEach((input, index) => {
+                    input.value = "SENT".split('')[index];
+                    input.readOnly = true;
+                    input.classList.add("hover:cursor-not-allowed", "outline-none");
+                });
+                sendButton.classList.add("hidden");
+            } else {
+                container.innerHTML = `
+                    <h1 class="text-4xl">${res.status}</h1>
+                    <p>${data.error}</p>
+                `;
+            }
+
+            container.animate([
+                {
+                    transform: 'translateY(calc(80vh - 332px))',
+                    opacity: 0,
+                    filter: 'blur(5px)'
+                },
+                {
+                    transform: 'translateY(0)',
+                    opacity: 1
+                }
+            ], {
+                duration: 325,
+                easing: 'ease-in-out'
+            });
+        });
+    </script>
+    <style>
+        :root {
+            --jiggle-scale: 0.875;
+        }
+
+        .toastjs-container {
+            transition-duration: 500ms;
+        }
+
+        .toastjs {
+            background-color: #0f0f0f;
+            font-size: 12px;
+
+            border: 1px solid #1b1b1b;
+        }
+
+        .toastjs-btn {
+            margin-top: 10px;
+            font-size: 10px;
+            background-color: rgba(255, 255, 255, 0.05);
+            font-family: inherit;
+        }
+
+        .shake {
+            animation: shake 1s 1;
+        }
+        
+        .shake-light {
+            animation: shake 1s 1;
+        }
+
+        @keyframes shake-light {
+
+            0%,
+            25%,
+            75%,
+            100% {
+                transform: rotate(0deg) scale(calc(var(--jiggle-scale) * 0.135));
+            }
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            35% {
+                transform: rotate(.5deg) translateX(5px) scale(calc(var(--jiggle-scale) * 0.135));
+            }
+
+            45% {
+                transform: rotate(-.5deg) translateX(-5px) scale(calc(var(--jiggle-scale) * 0.135));
+            }
+
+            55% {
+                transform: rotate(.5deg) translateX(5px) scale(calc(var(--jiggle-scale) * 0.135));
+            }
+
+            65% {
+                transform: rotate(-.5deg) translateX(-5px) scale(calc(var(--jiggle-scale) * 0.135));
+            }
+        }
+
+        @keyframes shake {
+
+            0%,
+            25%,
+            75%,
+            100% {
+                transform: rotate(0deg) scale(var(--jiggle-scale));
+            }
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            35% {
+                transform: rotate(5deg) translateX(5px) scale(var(--jiggle-scale));
+            }
+
+            45% {
+                transform: rotate(-5deg) translateX(-5px) scale(var(--jiggle-scale));
+            }
+
+            55% {
+                transform: rotate(5deg) translateX(5px) scale(var(--jiggle-scale));
+            }
+
+            65% {
+                transform: rotate(-5deg) translateX(-5px) scale(var(--jiggle-scale));
+            }
+        }
+    </style>
+</body>
+
+</html>
